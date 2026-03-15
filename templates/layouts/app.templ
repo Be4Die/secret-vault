@@ -1,0 +1,105 @@
+package layouts
+
+templ App(title string, activeNav string) {
+	<!DOCTYPE html>
+	<html lang="ru">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — Secret Vault</title>
+			<link rel="stylesheet" href="/static/css/css.gg.min.css"/>
+			<script src="/static/js/htmx.min.js"></script>
+			<script src="/static/js/tailwind.min.js"></script>
+		</head>
+		<body class="bg-black text-zinc-200 min-h-screen antialiased selection:bg-white/20 overflow-x-hidden">
+			<!-- Animated Canvas Background -->
+			<canvas id="network-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-60"></canvas>
+			<!-- Background effects -->
+			<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden mix-blend-screen">
+				<div class="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-zinc-800/10 blur-[120px]"></div>
+				<div class="absolute top-[40%] -right-[20%] w-[70%] h-[70%] rounded-full bg-zinc-700/10 blur-[150px]"></div>
+				<div class="absolute -bottom-[20%] left-[10%] w-[50%] h-[50%] rounded-full bg-zinc-800/10 blur-[100px]"></div>
+			</div>
+			<div class="relative z-10 min-h-screen flex">
+				<!-- Sidebar Navigation -->
+				@Sidebar(activeNav)
+				<!-- Main Content -->
+				<main class="flex-1 p-8 ml-64">
+					{ children... }
+				</main>
+			</div>
+			@canvasScript()
+		</body>
+	</html>
+}
+
+templ Sidebar(activeNav string) {
+	<aside class="fixed left-0 top-0 bottom-0 w-64 backdrop-blur-[60px] bg-zinc-900/40 border-r border-white/10 flex flex-col z-20 shadow-[4px_0_24px_0_rgba(0,0,0,0.3)]">
+		<!-- Logo -->
+		<div class="p-6 border-b border-white/5">
+			<a href="/" class="block">
+				<h1 class="text-lg font-semibold text-white tracking-tight">Secret Vault</h1>
+				<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Encrypted Storage</p>
+			</a>
+		</div>
+		<!-- Navigation -->
+		<nav class="flex-1 p-4 space-y-1">
+			<a
+				href="/account"
+				class={ "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+					templ.KV("bg-zinc-700/40 text-white shadow-sm border border-white/10", activeNav == "account"),
+					templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeNav != "account") }
+			>
+				<div class="w-6 flex justify-center items-center flex-shrink-0 mr-3">
+					<i class="gg-profile [--ggs:0.8]"></i>
+				</div>
+				Profile
+			</a>
+			<a
+				href="/password-generator"
+				class={ "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+					templ.KV("bg-zinc-700/40 text-white shadow-sm border border-white/10", activeNav == "password-generator"),
+					templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeNav != "password-generator") }
+			>
+				<div class="w-6 flex justify-center items-center flex-shrink-0 mr-3">
+					<i class="gg-lock [--ggs:0.8]"></i>
+				</div>
+				Generator
+			</a>
+			<div class="h-4"></div>
+			<a
+				href="/credentials"
+				class={ "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+					templ.KV("bg-zinc-700/40 text-white shadow-sm border border-white/10", activeNav == "credentials"),
+					templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeNav != "credentials") }
+			>
+				<div class="w-6 flex justify-center items-center flex-shrink-0 mr-3">
+					<i class="gg-user [--ggs:0.8]"></i>
+				</div>
+				Credentials
+			</a>
+			<a
+				href="/tokens"
+				class={ "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+					templ.KV("bg-zinc-700/40 text-white shadow-sm border border-white/10", activeNav == "tokens"),
+					templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeNav != "tokens") }
+			>
+				<div class="w-6 flex justify-center items-center flex-shrink-0 mr-3">
+					<i class="gg-key [--ggs:0.8]"></i>
+				</div>
+				Tokens
+			</a>
+		</nav>
+		<!-- User Section -->
+		<div class="p-4 border-t border-white/5">
+			<form method="POST" action="/auth/logout">
+				<button type="submit" class="w-full flex items-center px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 group active:scale-[0.98]">
+					<div class="w-6 flex justify-center items-center flex-shrink-0 mr-3 text-red-500/70 group-hover:text-red-400 transition-colors">
+						<i class="gg-log-out [--ggs:0.8]"></i>
+					</div>
+					Exit
+				</button>
+			</form>
+		</div>
+	</aside>
+}

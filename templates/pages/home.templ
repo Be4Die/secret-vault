@@ -1,0 +1,108 @@
+package pages
+
+import "secret-vault/templates/layouts"
+
+templ Home() {
+	@layouts.App("Vault", "") {
+		<div class="max-w-2xl mx-auto mt-16 relative z-10">
+			<div class="text-center mb-10">
+				<h2 class="text-3xl font-semibold text-white tracking-tight mb-2">Welcome</h2>
+				<p class="text-sm text-zinc-400">Your encrypted vault</p>
+			</div>
+			<!-- Global Search bar -->
+			<div class="relative mb-8">
+				<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+					<i class="gg-search text-zinc-500 [--ggs:0.9]"></i>
+				</div>
+				<input
+					type="text"
+					placeholder="Search all secrets..."
+					class="w-full bg-zinc-800/50 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 transition-all backdrop-blur-[60px] text-sm shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]"
+					id="global-search"
+					name="q"
+					autocomplete="off"
+				/>
+				<div class="htmx-indicator absolute right-4 top-1/2 -translate-y-1/2">
+					<div class="w-4 h-4 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></div>
+				</div>
+			</div>
+			<!-- Global search results -->
+			<div id="global-search-results" class="mb-8">
+				<!-- Results will appear here via htmx -->
+			</div>
+			<!-- Quick actions -->
+			<div class="backdrop-blur-[60px] bg-zinc-800/40 border border-white/10 rounded-[2rem] p-6 shadow-[0_16px_48px_0_rgba(0,0,0,0.5)] relative overflow-hidden" id="quick-actions">
+				<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+				<p class="text-[10px] text-zinc-400 uppercase tracking-widest mb-4 pl-1">Quick Actions</p>
+				<div class="space-y-2">
+					<a href="/credentials" class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/[0.04] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all duration-200 group shadow-sm active:scale-[0.98]">
+						<div class="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0">
+							<i class="gg-user text-zinc-300 group-hover:text-white transition-colors [--ggs:0.9]"></i>
+						</div>
+						<div class="flex-1">
+							<p class="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">Credentials</p>
+							<p class="text-xs text-zinc-500 mt-0.5">Manage logins & passwords</p>
+						</div>
+						<div class="flex items-center justify-center w-5">
+							<i class="gg-arrow-right text-zinc-600 group-hover:text-zinc-400 transition-colors [--ggs:0.8]"></i>
+						</div>
+					</a>
+					<a href="/tokens" class="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/[0.04] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all duration-200 group shadow-sm active:scale-[0.98]">
+						<div class="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0">
+							<i class="gg-key text-zinc-300 group-hover:text-white transition-colors [--ggs:0.9]"></i>
+						</div>
+						<div class="flex-1">
+							<p class="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">Tokens</p>
+							<p class="text-xs text-zinc-500 mt-0.5">API keys & access tokens</p>
+						</div>
+						<div class="flex items-center justify-center w-5">
+							<i class="gg-arrow-right text-zinc-600 group-hover:text-zinc-400 transition-colors [--ggs:0.8]"></i>
+						</div>
+					</a>
+				</div>
+			</div>
+		</div>
+		@globalSearchBehavior()
+	}
+}
+
+script globalSearchBehavior() {
+	(function() {
+		const input = document.getElementById('global-search');
+		const resultsContainer = document.getElementById('global-search-results');
+		const quickActions = document.getElementById('quick-actions');
+		if (!input || !quickActions || !resultsContainer) return;
+
+		let debounceTimer = null;
+
+		input.addEventListener('input', function() {
+			const q = input.value.trim();
+
+			if (debounceTimer) {
+				clearTimeout(debounceTimer);
+				debounceTimer = null;
+			}
+
+			if (q === '') {
+				resultsContainer.innerHTML = '';
+				quickActions.style.display = '';
+				return;
+			}
+
+			quickActions.style.display = 'none';
+
+			debounceTimer = setTimeout(function() {
+				fetch('/api/search/global?q=' + encodeURIComponent(q), {
+					headers: { 'HX-Request': 'true' }
+				})
+				.then(function(resp) { return resp.text(); })
+				.then(function(html) {
+					if (input.value.trim() === q) {
+						resultsContainer.innerHTML = html;
+					}
+				})
+				.catch(function() {});
+			}, 300);
+		});
+	})();
+}

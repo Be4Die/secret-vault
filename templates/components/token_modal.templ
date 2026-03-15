@@ -1,0 +1,103 @@
+package components
+
+templ CreateTokenModal() {
+	<div
+		id="token-create-modal"
+		class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+	>
+		<!-- Backdrop -->
+		<div
+			class="absolute inset-0 bg-black/60 backdrop-blur-md"
+			onclick="document.getElementById('token-create-modal').classList.add('hidden')"
+		></div>
+		<!-- Modal -->
+		<div class="relative w-full max-w-[460px] backdrop-blur-[60px] bg-zinc-800/60 border border-white/10 rounded-[2rem] p-7 shadow-[0_24px_80px_0_rgba(0,0,0,0.7)] overflow-hidden">
+			<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+			<div class="flex items-center justify-between mb-6">
+				<h3 class="text-lg font-semibold text-white">New Token</h3>
+				<button
+					type="button"
+					onclick="document.getElementById('token-create-modal').classList.add('hidden')"
+					class="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] transition-all text-zinc-400 hover:text-white active:scale-95"
+				>
+					<i class="gg-close [--ggs:0.8]"></i>
+				</button>
+			</div>
+			<form method="POST" action="/tokens" class="space-y-4">
+				<div>
+					<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1" for="token-create-title">Title</label>
+					<input
+						class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm"
+						type="text"
+						id="token-create-title"
+						name="title"
+						required
+						placeholder="e.g. OpenAI API Key"
+					/>
+				</div>
+				<div>
+					<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1" for="token-create-token">Token</label>
+					<div class="flex items-center gap-2">
+						<input
+							class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm font-mono"
+							type="password"
+							id="token-create-token"
+							name="token"
+							required
+							placeholder="sk-..."
+						/>
+						<button
+							type="button"
+							onclick="toggleCreateToken()"
+							class="flex items-center justify-center w-11 h-11 flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] transition-all text-zinc-300 hover:text-white shadow-sm active:scale-95"
+							title="Toggle visibility"
+						>
+							<i id="token-create-eye" class="gg-eye [--ggs:0.8]"></i>
+							<i id="token-create-eye-off" class="gg-eye-alt [--ggs:0.8] hidden"></i>
+						</button>
+					</div>
+				</div>
+				<div>
+					<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1" for="token-create-url">URL <span class="text-zinc-600 normal-case tracking-normal">(optional)</span></label>
+					<input
+						class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm"
+						type="url"
+						id="token-create-url"
+						name="url"
+						placeholder="https://..."
+					/>
+				</div>
+				<div>
+					<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1" for="token-create-note">Note <span class="text-zinc-600 normal-case tracking-normal">(optional)</span></label>
+					<textarea
+						class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm resize-none"
+						id="token-create-note"
+						name="note"
+						rows="2"
+						placeholder="Additional notes..."
+					></textarea>
+				</div>
+				<button type="submit" class="w-full bg-white text-black hover:bg-zinc-200 rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98] mt-2">
+					Save Token
+				</button>
+			</form>
+		</div>
+	</div>
+	<script>
+		function toggleCreateToken() {
+			const input = document.getElementById('token-create-token');
+			const eyeOn = document.getElementById('token-create-eye');
+			const eyeOff = document.getElementById('token-create-eye-off');
+
+			if (input.type === 'password') {
+				input.type = 'text';
+				eyeOn.classList.add('hidden');
+				eyeOff.classList.remove('hidden');
+			} else {
+				input.type = 'password';
+				eyeOn.classList.remove('hidden');
+				eyeOff.classList.add('hidden');
+			}
+		}
+	</script>
+}

@@ -1,0 +1,299 @@
+package components
+
+import "secret-vault/internal/usecase"
+
+templ TokenCard(tok usecase.TokenView) {
+	<div
+		class="group backdrop-blur-[60px] bg-zinc-800/40 border border-white/10 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] relative overflow-hidden transition-all duration-300"
+		id={ "token-card-" + tok.ID }
+	>
+		<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+		<!-- Delete Confirmation Overlay -->
+		<div
+			id={ "token-delete-overlay-" + tok.ID }
+			class="absolute inset-0 z-20 bg-zinc-900/90 backdrop-blur-xl flex flex-col items-center justify-center opacity-0 pointer-events-none scale-95 transition-all duration-300 ease-out p-6 text-center"
+		>
+			<div class="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400">
+				<i class="gg-trash [--ggs:1.2]"></i>
+			</div>
+			<h4 class="text-white font-medium mb-1">Delete { tok.Payload.Title }?</h4>
+			<p class="text-sm text-zinc-400 mb-6">This action cannot be undone.</p>
+			<div class="flex gap-3 w-full max-w-[240px]">
+				<button
+					type="button"
+					onclick={ hideTokenDeleteConfirm(tok.ID) }
+					class="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 text-sm font-medium text-zinc-300 hover:bg-white/[0.1] hover:text-white transition-all active:scale-95"
+				>
+					Cancel
+				</button>
+				<form method="POST" action={ templ.SafeURL("/tokens/" + tok.ID) } class="flex-1">
+					<input type="hidden" name="_method" value="DELETE"/>
+					<button
+						type="submit"
+						class="w-full px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-all shadow-[0_0_16px_rgba(239,68,68,0.4)] active:scale-95"
+					>
+						Delete
+					</button>
+				</form>
+			</div>
+		</div>
+		<!-- Card Summary -->
+		<div
+			class="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-white/[0.03] transition-colors duration-200 z-10 relative"
+			onclick={ toggleTokenDetail(tok.ID) }
+		>
+			<!-- Icon -->
+			<div class="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0 shadow-inner">
+				<i class="gg-key text-zinc-300 [--ggs:0.9]"></i>
+			</div>
+			<!-- Info -->
+			<div class="flex-1 min-w-0">
+				<p class="text-sm font-semibold text-white truncate">{ tok.Payload.Title }</p>
+				<p class="text-[11px] text-zinc-400 truncate mt-0.5 font-mono">••••••••</p>
+			</div>
+			<!-- URL badge -->
+			if tok.Payload.URL != "" {
+				<span class="hidden sm:block text-[10px] text-zinc-400 bg-black/20 border border-white/5 rounded-lg px-2.5 py-1 truncate max-w-[150px]">
+					{ tok.Payload.URL }
+				</span>
+			}
+			<!-- Chevron -->
+			<div class="flex items-center justify-center w-5 flex-shrink-0">
+				<i class="gg-chevron-down text-zinc-500 transition-transform duration-300 ease-out [--ggs:0.8]" id={ "token-chevron-" + tok.ID }></i>
+			</div>
+		</div>
+		<!-- Detail Panel -->
+		<div
+			class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-in-out relative z-10"
+			id={ "token-detail-wrapper-" + tok.ID }
+		>
+			<div class="overflow-hidden border-t border-transparent transition-colors duration-300" id={ "token-detail-inner-" + tok.ID }>
+				<!-- ================= VIEW MODE ================= -->
+				<div id={ "token-view-mode-" + tok.ID } class="px-5 pb-5 pt-3 space-y-4">
+					<!-- Token row -->
+					<div>
+						<label class="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 pl-1">Token</label>
+						<div class="flex items-center gap-2">
+							<p
+								class="flex-1 text-sm text-zinc-200 font-mono bg-black/20 border border-white/5 rounded-xl px-3.5 py-2.5 truncate shadow-inner"
+								id={ "token-value-display-" + tok.ID }
+							>••••••••</p>
+							<input type="hidden" id={ "token-value-hidden-" + tok.ID } value={ tok.Payload.Token }/>
+							<!-- Toggle visibility -->
+							<button
+								type="button"
+								onclick={ toggleTokenValue(tok.ID) }
+								class="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] transition-all text-zinc-300 hover:text-white shadow-sm active:scale-95"
+								title="Show token"
+							>
+								<i id={ "token-eye-" + tok.ID } class="gg-eye [--ggs:0.8]"></i>
+								<i id={ "token-eye-off-" + tok.ID } class="gg-eye-alt [--ggs:0.8] hidden"></i>
+							</button>
+							<!-- Copy -->
+							<button
+								type="button"
+								onclick={ copyToClipboard(tok.Payload.Token, "token-copied-"+tok.ID) }
+								class="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] transition-all text-zinc-300 hover:text-white shadow-sm active:scale-95"
+								title="Copy token"
+							>
+								<i class="gg-copy [--ggs:0.8]"></i>
+							</button>
+							<span id={ "token-copied-" + tok.ID } class="text-[10px] text-emerald-400 font-medium hidden ml-1">Copied!</span>
+						</div>
+					</div>
+					<!-- URL row -->
+					if tok.Payload.URL != "" {
+						<div>
+							<label class="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 pl-1">URL</label>
+							<a
+								href={ templ.SafeURL(tok.Payload.URL) }
+								target="_blank"
+								rel="noopener noreferrer"
+								class="inline-flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition-colors font-mono bg-black/20 border border-white/5 rounded-xl px-3.5 py-2.5 shadow-inner w-full sm:w-auto truncate"
+							>
+								{ tok.Payload.URL }
+								<span class="flex items-center justify-center opacity-70"><i class="gg-external [--ggs:0.7]"></i></span>
+							</a>
+						</div>
+					}
+					<!-- Note row -->
+					if tok.Payload.Note != "" {
+						<div>
+							<label class="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 pl-1">Note</label>
+							<p class="text-sm text-zinc-300 bg-black/20 border border-white/5 rounded-xl px-3.5 py-2.5 shadow-inner leading-relaxed">{ tok.Payload.Note }</p>
+						</div>
+					}
+					<!-- Actions -->
+					<div class="flex items-center gap-3 pt-3">
+						<button
+							type="button"
+							onclick={ toggleTokenEditMode(tok.ID, true) }
+							class="flex items-center justify-center px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] text-sm font-medium text-zinc-200 hover:text-white transition-all shadow-sm flex-1 sm:flex-none active:scale-95"
+						>
+							<span class="flex items-center justify-center w-5 mr-2"><i class="gg-pen [--ggs:0.8]"></i></span>
+							Edit
+						</button>
+						<button
+							type="button"
+							onclick={ showTokenDeleteConfirm(tok.ID) }
+							class="flex items-center justify-center px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-sm font-medium text-red-400 hover:text-red-300 transition-all shadow-sm flex-1 sm:flex-none active:scale-95"
+						>
+							<span class="flex items-center justify-center w-5 mr-2"><i class="gg-trash [--ggs:0.8]"></i></span>
+							Delete
+						</button>
+					</div>
+				</div>
+				<!-- ================= EDIT MODE ================= -->
+				<form id={ "token-edit-mode-" + tok.ID } method="POST" action={ templ.SafeURL("/tokens/" + tok.ID) } class="hidden px-5 pb-5 pt-3 space-y-4">
+					<div>
+						<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1">Title</label>
+						<input
+							class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm"
+							type="text"
+							name="title"
+							value={ tok.Payload.Title }
+							required
+						/>
+					</div>
+					<div>
+						<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1">Token</label>
+						<div class="flex items-center gap-2">
+							<input
+								class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm font-mono"
+								type="password"
+								id={ "edit-token-input-" + tok.ID }
+								name="token"
+								value={ tok.Payload.Token }
+								required
+							/>
+							<button
+								type="button"
+								onclick={ toggleEditTokenInput(tok.ID) }
+								class="flex items-center justify-center w-11 h-11 flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.1] transition-all text-zinc-300 hover:text-white shadow-sm active:scale-95"
+								title="Toggle visibility"
+							>
+								<i id={ "edit-token-eye-" + tok.ID } class="gg-eye [--ggs:0.8]"></i>
+								<i id={ "edit-token-eye-off-" + tok.ID } class="gg-eye-alt [--ggs:0.8] hidden"></i>
+							</button>
+						</div>
+					</div>
+					<div>
+						<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1">URL <span class="text-zinc-600 normal-case tracking-normal">(optional)</span></label>
+						<input
+							class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm"
+							type="url"
+							name="url"
+							value={ tok.Payload.URL }
+						/>
+					</div>
+					<div>
+						<label class="block text-[10px] text-zinc-400 uppercase tracking-widest mb-1.5 pl-1">Note <span class="text-zinc-600 normal-case tracking-normal">(optional)</span></label>
+						<textarea
+							class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm resize-none"
+							name="note"
+							rows="2"
+						>{ tok.Payload.Note }</textarea>
+					</div>
+					<!-- Edit Actions -->
+					<div class="flex items-center gap-3 pt-3">
+						<button
+							type="button"
+							onclick={ toggleTokenEditMode(tok.ID, false) }
+							class="flex-1 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-sm font-medium text-zinc-300 hover:bg-white/[0.1] hover:text-white transition-all active:scale-95 shadow-sm"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							class="flex-1 px-4 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+						>
+							Accept
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+script toggleTokenDetail(id string) {
+	const wrapper = document.getElementById('token-detail-wrapper-' + id);
+	const inner = document.getElementById('token-detail-inner-' + id);
+	const chevron = document.getElementById('token-chevron-' + id);
+
+	if (wrapper.classList.contains('grid-rows-[0fr]')) {
+		wrapper.classList.remove('grid-rows-[0fr]');
+		wrapper.classList.add('grid-rows-[1fr]');
+		inner.classList.add('border-white/5');
+		chevron.classList.add('rotate-180');
+	} else {
+		wrapper.classList.remove('grid-rows-[1fr]');
+		wrapper.classList.add('grid-rows-[0fr]');
+		inner.classList.remove('border-white/5');
+		chevron.classList.remove('rotate-180');
+
+		// Reset to view mode on close
+		setTimeout(() => {
+			document.getElementById('token-edit-mode-' + id).classList.add('hidden');
+			document.getElementById('token-view-mode-' + id).classList.remove('hidden');
+		}, 300);
+	}
+}
+
+script toggleTokenEditMode(id string, show bool) {
+	const view = document.getElementById('token-view-mode-' + id);
+	const edit = document.getElementById('token-edit-mode-' + id);
+
+	if (show) {
+		view.classList.add('hidden');
+		edit.classList.remove('hidden');
+	} else {
+		edit.classList.add('hidden');
+		view.classList.remove('hidden');
+	}
+}
+
+script toggleEditTokenInput(id string) {
+	const input = document.getElementById('edit-token-input-' + id);
+	const eyeOn = document.getElementById('edit-token-eye-' + id);
+	const eyeOff = document.getElementById('edit-token-eye-off-' + id);
+
+	if (input.type === 'password') {
+		input.type = 'text';
+		eyeOn.classList.add('hidden');
+		eyeOff.classList.remove('hidden');
+	} else {
+		input.type = 'password';
+		eyeOn.classList.remove('hidden');
+		eyeOff.classList.add('hidden');
+	}
+}
+
+script toggleTokenValue(id string) {
+	const display = document.getElementById('token-value-display-' + id);
+	const value = document.getElementById('token-value-hidden-' + id).value;
+	const eyeOn = document.getElementById('token-eye-' + id);
+	const eyeOff = document.getElementById('token-eye-off-' + id);
+
+	if (display.textContent === '••••••••') {
+		display.textContent = value;
+		eyeOn.classList.add('hidden');
+		eyeOff.classList.remove('hidden');
+	} else {
+		display.textContent = '••••••••';
+		eyeOn.classList.remove('hidden');
+		eyeOff.classList.add('hidden');
+	}
+}
+
+script showTokenDeleteConfirm(id string) {
+	const overlay = document.getElementById('token-delete-overlay-' + id);
+	overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+	overlay.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+}
+
+script hideTokenDeleteConfirm(id string) {
+	const overlay = document.getElementById('token-delete-overlay-' + id);
+	overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+	overlay.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+}

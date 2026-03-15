@@ -1,0 +1,45 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+/bin/
+/build/
+/tmp/
+
+# Go
+*.test
+*.out
+vendor/
+
+# Templ generated files
+*_templ.go
+
+# Tailwind output
+static/css/output.css
+
+# Environment
+.env
+
+# Database
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+docker-data/

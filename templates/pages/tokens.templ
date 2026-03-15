@@ -1,0 +1,165 @@
+package pages
+
+import (
+	"secret-vault/internal/usecase"
+	"secret-vault/templates/components"
+	"secret-vault/templates/layouts"
+)
+
+templ Tokens(tokens []usecase.TokenView, errorMsg string) {
+	@layouts.App("Tokens", "tokens") {
+		<div class="max-w-3xl mx-auto mt-8">
+			<!-- Header -->
+			<div class="flex items-center justify-between mb-8">
+				<div>
+					<h2 class="text-2xl font-semibold text-white tracking-tight">Tokens</h2>
+					<p class="text-xs text-zinc-500 uppercase tracking-widest mt-1">API Keys & Access Tokens</p>
+				</div>
+				<button
+					onclick="document.getElementById('token-create-modal').classList.remove('hidden')"
+					class="bg-white text-black hover:bg-zinc-200 rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 active:scale-[0.98]"
+				>
+					+ Add Token
+				</button>
+			</div>
+			if errorMsg != "" {
+				<div class="bg-red-950/30 border border-red-900/50 text-red-200 rounded-xl p-4 mb-6 text-sm backdrop-blur-md text-center">
+					{ errorMsg }
+				</div>
+			}
+			<!-- Search -->
+			<div class="relative mb-6">
+				<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+					<i class="gg-search text-zinc-600 [--ggs:0.8]"></i>
+				</div>
+				<input
+					type="text"
+					placeholder="Search tokens..."
+					class="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-white placeholder-zinc-700 focus:outline-none focus:border-white/20 transition-all backdrop-blur-md text-sm"
+					id="token-search"
+					name="q"
+					hx-get="/api/search/tokens"
+					hx-trigger="input changed delay:300ms, search"
+					hx-target="#token-list"
+					hx-swap="innerHTML"
+					autocomplete="off"
+				/>
+				<div class="htmx-indicator absolute right-4 top-1/2 -translate-y-1/2">
+					<div class="w-4 h-4 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></div>
+				</div>
+			</div>
+			<!-- Tokens list -->
+			<div class="space-y-3" id="token-list">
+				if len(tokens) == 0 {
+					<div class="backdrop-blur-[40px] bg-zinc-900/30 border border-white/10 rounded-[2rem] p-12 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] relative overflow-hidden">
+						<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+						<div class="text-center flex flex-col items-center">
+							<div class="mb-5 mt-2 text-zinc-800 flex items-center justify-center">
+								<i class="gg-key [--ggs:2.0]"></i>
+							</div>
+							<p class="text-zinc-600 text-sm mb-1">No tokens yet</p>
+							<p class="text-zinc-700 text-xs">Click "+ Add Token" to get started</p>
+						</div>
+					</div>
+				} else {
+					for _, tok := range tokens {
+						@components.TokenCard(tok)
+					}
+				}
+			</div>
+		</div>
+		<!-- Create Modal -->
+		@components.CreateTokenModal()
+		<!-- Client-side fuzzy search script -->
+		@tokenClientSearch()
+	}
+}
+
+script tokenClientSearch() {
+	(function() {
+		const input = document.getElementById('token-search');
+		if (!input) return;
+
+		const listEl = document.getElementById('token-list');
+		let cards = null;
+		let originalHTML = listEl.innerHTML;
+
+		function getCardsData() {
+			if (cards !== null) return cards;
+			cards = [];
+			const cardEls = listEl.querySelectorAll('[id^="token-card-"]');
+			cardEls.forEach(function(el) {
+				const title = el.querySelector('p.font-semibold')?.textContent || '';
+				const urlBadge = el.querySelector('span.truncate')?.textContent || '';
+				cards.push({
+					fields: [title.toLowerCase(), urlBadge.toLowerCase()],
+					html: el.outerHTML
+				});
+			});
+			return cards;
+		}
+
+		function bigrams(str) {
+			const b = {};
+			for (let i = 0; i < str.length - 1; i++) {
+				const pair = str.substring(i, i + 2);
+				b[pair] = (b[pair] || 0) + 1;
+			}
+			return b;
+		}
+
+		function similarity(query, text) {
+			if (!query || !text) return 0;
+			query = query.toLowerCase().trim();
+			text = text.toLowerCase().trim();
+			if (text === query) return 1;
+			if (text.includes(query)) return 0.95;
+
+			const bg1 = bigrams(query);
+			const bg2 = bigrams(text);
+			let intersection = 0;
+			for (const pair in bg1) {
+				if (bg2[pair]) {
+					intersection += Math.min(bg1[pair], bg2[pair]);
+				}
+			}
+			const total = (query.length - 1) + (text.length - 1);
+			if (total === 0) return 0;
+			return (2 * intersection) / total;
+		}
+
+		function bestScore(query, fields) {
+			let best = 0;
+			fields.forEach(function(f) {
+				const s = similarity(query, f);
+				if (s > best) best = s;
+			});
+			return best;
+		}
+
+		input.addEventListener('input', function() {
+			const q = input.value.trim();
+
+			if (q === '') {
+				listEl.innerHTML = originalHTML;
+				cards = null;
+				return;
+			}
+
+			const data = getCardsData();
+			if (data.length === 0) return;
+
+			const scored = data.map(function(c) {
+				return { html: c.html, score: bestScore(q, c.fields) };
+			}).filter(function(c) {
+				return c.score >= 0.25;
+			}).sort(function(a, b) {
+				return b.score - a.score;
+			});
+
+			if (scored.length > 0) {
+				listEl.innerHTML = scored.map(function(c) { return c.html; }).join('');
+			}
+		});
+	})();
+}

@@ -1,0 +1,66 @@
+package components
+
+import "secret-vault/internal/entity"
+
+templ GlobalSearchResults(results []entity.SearchResult) {
+	if len(results) == 0 {
+		<!-- Empty state hidden by default, shown only when there was a real query -->
+		<div class="text-center py-8 flex flex-col items-center" id="global-empty-state">
+			<div class="mb-4 mt-2 opacity-50 flex items-center justify-center">
+				<i class="gg-search text-zinc-800 [--ggs:2.0]"></i>
+			</div>
+			<p class="text-zinc-600 text-sm">No results</p>
+			<p class="text-zinc-700 text-xs mt-0.5">Try a different search query</p>
+		</div>
+	} else {
+		<div class="space-y-1.5">
+			for _, result := range results {
+				@globalSearchItem(result)
+			}
+		</div>
+	}
+}
+
+templ globalSearchItem(result entity.SearchResult) {
+	<a
+		href={ templ.SafeURL(searchResultURL(result)) }
+		class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 transition-all duration-200 group active:scale-[0.99]"
+	>
+		<!-- Icon -->
+		<div class="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center flex-shrink-0">
+			if result.SecretType == entity.SecretTypeCredential {
+				<i class="gg-user text-zinc-400 group-hover:text-zinc-200 transition-colors [--ggs:0.8]"></i>
+			} else {
+				<i class="gg-key text-zinc-400 group-hover:text-zinc-200 transition-colors [--ggs:0.8]"></i>
+			}
+		</div>
+		<!-- Info -->
+		<div class="flex-1 min-w-0">
+			<p class="text-sm font-medium text-zinc-200 group-hover:text-white truncate transition-colors">{ result.Title }</p>
+			<p class="text-[11px] text-zinc-500 truncate mt-0.5">{ result.Subtitle }</p>
+		</div>
+		<!-- Type badge -->
+		<span class="text-[9px] text-zinc-500 bg-white/[0.04] border border-white/5 rounded-lg px-2 py-0.5 uppercase tracking-widest flex-shrink-0">
+			if result.SecretType == entity.SecretTypeCredential {
+				Credential
+			} else {
+				Token
+			}
+		</span>
+		<!-- Arrow -->
+		<div class="flex items-center justify-center w-4 flex-shrink-0 ml-1">
+			<i class="gg-arrow-right text-zinc-700 group-hover:text-zinc-400 transition-colors flex-shrink-0 [--ggs:0.7]"></i>
+		</div>
+	</a>
+}
+
+func searchResultURL(result entity.SearchResult) string {
+	switch result.SecretType {
+	case entity.SecretTypeCredential:
+		return "/credentials"
+	case entity.SecretTypeToken:
+		return "/tokens"
+	default:
+		return "/"
+	}
+}

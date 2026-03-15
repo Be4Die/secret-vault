@@ -1,0 +1,191 @@
+package pages
+
+import (
+	"fmt"
+	"secret-vault/templates/layouts"
+	"strings"
+)
+
+templ Auth(activeTab string, errorMsg string, successMsg string) {
+	@layouts.Base("Auth") {
+		<div class="w-full max-w-[420px] backdrop-blur-[60px] bg-zinc-800/50 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_16px_48px_0_rgba(0,0,0,0.6)] relative overflow-hidden">
+			<!-- Glass Top Highlight -->
+			<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+			<div class="text-center mb-10 mt-2">
+				<h1 class="text-2xl font-semibold text-white tracking-tight mb-1">Secret Vault</h1>
+				<p class="text-[10px] text-zinc-400 uppercase tracking-widest">Secure Storage</p>
+			</div>
+			<div class="flex gap-2 p-1.5 bg-black/30 backdrop-blur-md rounded-[1.25rem] border border-white/5 mb-8 shadow-inner">
+				<a href="/auth?tab=login" class={ "flex-1 py-2.5 px-4 text-center rounded-xl text-sm font-medium transition-all duration-300", templ.KV("bg-white/10 text-white shadow-sm border border-white/10", activeTab == "login"), templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeTab != "login") }>Login</a>
+				<a href="/auth?tab=register" class={ "flex-1 py-2.5 px-4 text-center rounded-xl text-sm font-medium transition-all duration-300", templ.KV("bg-white/10 text-white shadow-sm border border-white/10", activeTab == "register"), templ.KV("text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]", activeTab != "register") }>Register</a>
+			</div>
+			if errorMsg != "" {
+				<div class="bg-red-500/10 border border-red-500/20 text-red-300 rounded-xl p-4 mb-6 text-sm backdrop-blur-md text-center">
+					{ errorMsg }
+				</div>
+			}
+			if activeTab == "login" {
+				@LoginForm()
+			} else {
+				@RegisterForm()
+			}
+		</div>
+	}
+}
+
+templ LoginForm() {
+	<form method="POST" action="/auth/login" class="flex flex-col gap-5">
+		<div>
+			<label class="block text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-2 pl-1" for="username">Username</label>
+			<input class="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm" type="text" id="username" name="username" required autocomplete="username"/>
+		</div>
+		<div>
+			<label class="block text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-2 pl-1">Seed Phrase (12 words)</label>
+			<div class="grid grid-cols-3 gap-2 mb-2" id="seed-container">
+				for i := 1; i <= 12; i++ {
+					<div class="relative">
+						<span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs pointer-events-none select-none font-mono">{ itoa(i) }</span>
+						<input
+							class="w-full bg-black/20 border border-white/10 rounded-xl py-2.5 pr-2 pl-7 text-white font-mono text-sm focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner"
+							type="text"
+							data-index={ itoa(i - 1) }
+							autocomplete="off"
+							autocapitalize="none"
+						/>
+					</div>
+				}
+			</div>
+			<input type="hidden" name="mnemonic" id="mnemonic-input"/>
+		</div>
+		<button type="submit" class="mt-4 w-full bg-white text-black hover:bg-zinc-200 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-[0.98]">
+			Access Vault
+		</button>
+	</form>
+	<script>
+		(function() {
+			const container = document.getElementById('seed-container');
+			const inputs = container.querySelectorAll('input');
+			const hiddenInput = document.getElementById('mnemonic-input');
+
+			function updateHidden() {
+				const words = Array.from(inputs).map(i => i.value.trim().toLowerCase()).filter(w => w);
+				hiddenInput.value = words.join(' ');
+			}
+
+			inputs.forEach((input, index) => {
+				input.addEventListener('input', (e) => {
+					const value = e.target.value;
+					if (value.includes(' ')) {
+						const words = value.trim().split(/\s+/);
+						words.forEach((word, i) => {
+							if (inputs[index + i]) {
+								inputs[index + i].value = word;
+							}
+						});
+						const nextIndex = Math.min(index + words.length, inputs.length - 1);
+						inputs[nextIndex].focus();
+					}
+					updateHidden();
+				});
+
+				input.addEventListener('keydown', (e) => {
+					if (e.key === ' ' && index < inputs.length - 1) {
+						e.preventDefault();
+						inputs[index + 1].focus();
+					}
+					if (e.key === 'Backspace' && !e.target.value && index > 0) {
+						inputs[index - 1].focus();
+					}
+				});
+
+				input.addEventListener('paste', (e) => {
+					e.preventDefault();
+					const paste = e.clipboardData.getData('text');
+					const words = paste.trim().split(/\s+/);
+					words.forEach((word, i) => {
+						if (inputs[i]) {
+							inputs[i].value = word;
+						}
+					});
+					const nextIndex = Math.min(words.length, inputs.length - 1);
+					inputs[nextIndex].focus();
+					updateHidden();
+				});
+			});
+		})();
+	</script>
+}
+
+templ RegisterForm() {
+	<form method="POST" action="/auth/register" class="flex flex-col gap-6">
+		<div>
+			<label class="block text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-2 pl-1" for="reg-username">Username</label>
+			<input class="w-full bg-black/20 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 focus:outline-none focus:border-white/30 focus:bg-black/40 transition-all shadow-inner text-sm" type="text" id="reg-username" name="username" required autocomplete="username" minlength="3" maxlength="32"/>
+		</div>
+		<button type="submit" class="mt-2 w-full bg-white text-black hover:bg-zinc-200 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-[0.98]">
+			Generate Seed Phrase
+		</button>
+	</form>
+}
+
+func itoa(i int) string {
+	return fmt.Sprintf("%d", i)
+}
+
+func splitWords(s string) []string {
+	return strings.Split(s, " ")
+}
+
+templ ShowSeed(mnemonic string, token string) {
+	@layouts.Base("Save Your Seed") {
+		<div class="w-full max-w-[480px] backdrop-blur-[60px] bg-zinc-800/50 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_16px_48px_0_rgba(0,0,0,0.6)] relative overflow-hidden">
+			<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50"></div>
+			<div class="text-center mb-8 mt-2">
+				<h1 class="text-2xl font-semibold text-white tracking-tight mb-2">Recovery Seed</h1>
+				<p class="text-sm text-zinc-400">Write it down and keep it safe</p>
+			</div>
+			<div class="bg-black/30 backdrop-blur-md border border-white/5 rounded-3xl p-5 mb-4 shadow-inner">
+				<div class="grid grid-cols-3 gap-3">
+					for i, word := range splitWords(mnemonic) {
+						<div class="bg-white/[0.05] border border-white/[0.08] rounded-xl p-2.5 text-center font-mono text-sm text-zinc-200 shadow-sm">
+							<span class="text-zinc-600 mr-1.5 select-none text-[10px]">{ itoa(i + 1) }</span>
+							{ word }
+						</div>
+					}
+				</div>
+			</div>
+			<button type="button" class="copy-btn w-full mb-8 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-2xl px-4 py-3.5 text-sm font-medium transition-all active:scale-[0.98]" onclick={ copyScript(mnemonic) }>
+				Copy to Clipboard
+			</button>
+			<div class="bg-orange-950/20 border border-orange-900/30 text-orange-200/80 rounded-2xl p-5 mb-8 text-xs leading-relaxed text-center">
+				This is the only time you will see this phrase.
+				<br/>
+				If you lose it, access is gone forever.
+			</div>
+			<form method="POST" action="/auth/register/confirm">
+				<input type="hidden" name="token" value={ token }/>
+				<div class="flex items-start gap-4 mb-8 cursor-pointer group px-2">
+					<div class="relative flex items-center justify-center mt-0.5 w-5 h-5 flex-shrink-0">
+						<input type="checkbox" id="confirmed" name="confirmed" class="peer appearance-none w-5 h-5 rounded-md border border-white/20 bg-black/40 checked:bg-white/20 checked:border-white/40 focus:outline-none transition-all cursor-pointer m-0" required/>
+						<div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity">
+							<i class="gg-check text-white [--ggs:0.8]"></i>
+						</div>
+					</div>
+					<label for="confirmed" class="text-sm text-zinc-300 leading-snug cursor-pointer group-hover:text-white transition-colors">
+						I have securely saved my seed phrase and understand the risks
+					</label>
+				</div>
+				<button type="submit" class="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-[0.98]">
+					Complete Setup
+				</button>
+			</form>
+		</div>
+	}
+}
+
+script copyScript(mnemonic string) {
+	navigator.clipboard.writeText(mnemonic);
+	const btn = document.querySelector('.copy-btn');
+	btn.textContent = 'Copied!';
+	setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+}
