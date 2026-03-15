@@ -53,7 +53,11 @@ func (r *SessionRepository) ListByUserID(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("query sessions: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("closing session rows: %v\n", err)
+		}
+	}()
 
 	var sessions []entity.Session
 	for rows.Next() {
