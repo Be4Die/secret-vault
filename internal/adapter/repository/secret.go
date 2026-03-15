@@ -53,7 +53,11 @@ func (r *SecretRepository) ListByUserAndType(ctx context.Context, userID string,
 	if err != nil {
 		return nil, fmt.Errorf("query secrets: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("closing secret rows: %v\n", err)
+		}
+	}()
 
 	var secrets []entity.Secret
 	for rows.Next() {
@@ -73,7 +77,11 @@ func (r *SecretRepository) ListByUser(ctx context.Context, userID string) ([]ent
 	if err != nil {
 		return nil, fmt.Errorf("query secrets: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("closing secret rows: %v\n", err)
+		}
+	}()
 
 	var secrets []entity.Secret
 	for rows.Next() {

@@ -190,7 +190,11 @@ func (h *AccountHandler) Import(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/account?error=no_file", http.StatusSeeOther)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			slog.Error("closing uploaded file", "error", err)
+		}
+	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {

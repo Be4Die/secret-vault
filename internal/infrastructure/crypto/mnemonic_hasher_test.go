@@ -33,13 +33,12 @@ func TestMnemonicHasher_Format(t *testing.T) {
 
 	hash := h.HashForAuth("test mnemonic")
 
-	// SHA-256 produces 64-char hex string
 	if len(hash) != 64 {
 		t.Errorf("expected 64-char hex string, got %d chars", len(hash))
 	}
 
 	for _, c := range hash {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Errorf("invalid hex character: %c", c)
 		}
 	}

@@ -48,7 +48,11 @@ func (r *AuditRepository) ListByUser(ctx context.Context, userID string, categor
 	if err != nil {
 		return nil, fmt.Errorf("query audit logs: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Printf("closing audit rows: %v\n", err)
+		}
+	}()
 
 	var logs []entity.AuditLog
 	for rows.Next() {

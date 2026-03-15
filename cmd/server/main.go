@@ -44,7 +44,11 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("connecting to database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("closing database", "error", err)
+		}
+	}()
 
 	if err := database.Migrate(db, "migrations/init.sql"); err != nil {
 		return fmt.Errorf("running migrations: %w", err)

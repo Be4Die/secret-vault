@@ -36,7 +36,6 @@ func (uc *PasswordUseCase) Generate(params entity.PasswordParams) (string, error
 		result[i] = charset[idx.Int64()]
 	}
 
-	// Ensure at least one character from each selected set
 	pos := 0
 	if params.Lowercase && pos < params.Length {
 		result[pos] = mustRandChar(lowercaseChars)
@@ -52,10 +51,8 @@ func (uc *PasswordUseCase) Generate(params entity.PasswordParams) (string, error
 	}
 	if params.Symbols && pos < params.Length {
 		result[pos] = mustRandChar(symbolChars)
-		pos++
 	}
 
-	// Shuffle using Fisher-Yates
 	for i := len(result) - 1; i > 0; i-- {
 		j, _ := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
 		result[i], result[j.Int64()] = result[j.Int64()], result[i]
